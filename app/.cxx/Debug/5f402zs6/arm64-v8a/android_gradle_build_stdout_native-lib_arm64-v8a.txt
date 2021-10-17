@@ -1,0 +1,2 @@
+ninja: Entering directory `E:\AndroidStudio_workspace\Hijacker\app\.cxx\Debug\5f402zs6\arm64-v8a'
+ninja: no work to do.

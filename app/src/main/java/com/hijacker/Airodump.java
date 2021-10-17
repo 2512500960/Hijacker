@@ -59,6 +59,7 @@ import static com.hijacker.Shell.runOne;
 
 class Airodump{
     static final String TAG = "HIJACKER/Airodump";
+    static boolean debugNoLine=true;
     private static int channel = 0;
     private static boolean forWPA = false, forWEP = false, running = false;
     private static String mac = null;
@@ -312,6 +313,7 @@ class Airodump{
 
     static class CapFileObserver extends FileObserver{
         static String TAG = "HIJACKER/CapFileObs";
+        static boolean debugNoLine=true;
         String master_path;
         Shell shell = null;
         boolean found_cap_file = false;
@@ -325,7 +327,7 @@ class Airodump{
                 Log.e(TAG, "Received event " + event + " for null path");
                 return;
             }
-            boolean isPcap = path.endsWith(".pcap");
+            boolean isPcap = path.endsWith(".pcap") || path.endsWith(".cap");
 
             switch(event){
                 case FileObserver.CREATE:
@@ -364,7 +366,9 @@ class Airodump{
 
             if(shell!=null) {
                 if (writingToFile()) {
-                    shell.run(busybox + " mv " + capFile + " " + cap_path + '/');
+                    String cmd=busybox + " mv " + capFile + " " + cap_path + '/';
+                    Log.e("Airodump/stopWatching","cmd: "+cmd);
+                    shell.run(cmd);
                 }
                 shell.run(busybox + " rm " + cap_tmp_path + "/*");
                 shell.done();
@@ -384,7 +388,9 @@ class Airodump{
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 while(true){
                     String line = out.readLine();
-                    Log.d(TAG, line);
+                    if(!debugNoLine){
+                        Log.d(TAG, line);
+                    }
                     if(line.equals("ENDOFCAT"))
                         break;
 
@@ -400,7 +406,9 @@ class Airodump{
 
                     line = line.replace(", ", ",");
                     String[] fields = line.split(",");
-                    Log.i(TAG, line);
+                    if(!debugNoLine){
+                        Log.i(TAG, line);
+                    }
                     if(type == 0){
                         // Parse AP
                         // BSSID, First time seen, Last time seen, channel, Speed, Privacy,Cipher,

@@ -395,6 +395,7 @@ public class MainActivity extends AppCompatActivity{
             dirs.add(new File(cap_path));
             dirs.add(new File(reaver_sess_path));
             for(File dir : dirs){
+                Log.d("MainActivity/CheckingDirs","checking "+dir);
                 if(!dir.exists()){
                     dir.mkdir();
                 }
@@ -734,6 +735,7 @@ public class MainActivity extends AppCompatActivity{
                                         if(buffer.length()>=56){
                                             if(buffer.charAt(56)=='1' || buffer.charAt(56)=='2' || buffer.charAt(56)=='3'){
                                                 handshake_captured = true;
+                                                Log.e("MainActivity/wpa_runnable","handshake_captured!");
                                                 break;
                                             }
                                         }
@@ -750,7 +752,15 @@ public class MainActivity extends AppCompatActivity{
                         counter_thread.interrupt();
                         shell.done();
                         final boolean found = handshake_captured;
-                        if(found) Airodump.startClean(is_ap);
+                        if(found) {
+                            Shell shell_cp_cap =getFreeShell();
+                            String saveCapFileDest=cap_path+"/"+is_ap.mac.replace(":","")
+                                    +"-"+System.currentTimeMillis()+ ".pcap";
+                            String cmd=busybox + " cp "+capfile +" "+saveCapFileDest;
+                            shell_cp_cap.run(cmd);
+                            shell_cp_cap.done();
+                            Airodump.startClean(is_ap);
+                        }
                         runInHandler(new Runnable(){
                             @Override
                             public void run(){

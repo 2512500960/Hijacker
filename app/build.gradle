@@ -3,7 +3,7 @@ android {
     compileSdkVersion 29
     defaultConfig {
         applicationId "com.hijacker"
-        minSdkVersion 21
+        minSdkVersion 23
         targetSdkVersion 29
         versionCode 36
         versionName "v1.5-beta.12"
