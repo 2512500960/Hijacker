@@ -98,7 +98,7 @@ import static com.hijacker.Shell.runOne;
 public class MainActivity extends AppCompatActivity{
     static final String NETHUNTER_BOOTKALI_BASH = "/data/data/com.offsec.nethunter/files/scripts/bootkali_bash";
     static final String RELEASES_LINK = "https://api.github.com/repos/chrisk44/Hijacker/releases";
-    static final String WORDLISTS_LINK = "https://api.github.com/repos/chrisk44/Hijacker/contents/wordlists";
+    static final String WORDLISTS_LINK = "https://api.github.com/repos/2512500960/Hijacker/contents/wordlists";
     static final int BUFFER_SIZE = 1048576;
     static final int MAX_READLINE_SIZE = 10000;
     static final int AIREPLAY_DEAUTH = 1, AIREPLAY_WEP = 2;
