@@ -17,6 +17,8 @@ package com.hijacker;
     along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+import static android.os.Environment.DIRECTORY_DOWNLOADS;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
@@ -24,8 +26,11 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -33,6 +38,8 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AlertDialog;
+
+import android.os.Environment;
 import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
@@ -48,11 +55,15 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import static com.hijacker.IsolatedFragment.is_ap;
 import static com.hijacker.MainActivity.WORDLISTS_LINK;
+import static com.hijacker.MainActivity.busybox;
 import static com.hijacker.MainActivity.wl_path;
+import static com.hijacker.Shell.getFreeShell;
 
 public class WordlistDownloadDialog extends DialogFragment{
     View dialogView;
@@ -62,6 +73,7 @@ public class WordlistDownloadDialog extends DialogFragment{
     LoadTask task;
     WordlistAdapter adapter;
     ArrayList<Wordlist> wordlists = new ArrayList<>();
+
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState){
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -93,6 +105,7 @@ public class WordlistDownloadDialog extends DialogFragment{
 
         return builder.create();
     }
+
     void beginDownload(Wordlist wl){
         //Check for external storage and internet permission
         if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE)!=PackageManager.PERMISSION_GRANTED ||
@@ -105,11 +118,14 @@ public class WordlistDownloadDialog extends DialogFragment{
         request.setTitle(wl.filename);
         request.allowScanningByMediaScanner();
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationUri(Uri.fromFile(new File(wl_path, wl.filename)));
+        File AndroidDownloadDir= Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS);
+
+        request.setDestinationUri(Uri.fromFile(new File(AndroidDownloadDir, wl.filename)));
 
         DownloadManager manager = (DownloadManager) getActivity().getSystemService(Context.DOWNLOAD_SERVICE);
         if(manager!=null){
-            manager.enqueue(request);
+            long downloadID=manager.enqueue(request);
+            CrackFragment.downloadingTasks.put(downloadID,wl);
         }else{
             Toast.makeText(getActivity(), getString(R.string.cant_start_download), Toast.LENGTH_SHORT).show();
         }
@@ -225,7 +241,7 @@ public class WordlistDownloadDialog extends DialogFragment{
             return wordlists.size();
         }
     }
-    private class Wordlist{
+    protected class Wordlist{
         int size;
         String filename, download_url;
         Wordlist(String filename, int size, String url){

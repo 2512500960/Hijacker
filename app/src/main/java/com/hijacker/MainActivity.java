@@ -713,6 +713,7 @@ public class MainActivity extends AppCompatActivity{
 
                     boolean handshake_captured = false;
                     final String capfile = Airodump.getCapFile();
+                    String saveCapFileDest="";
                     Shell shell = getFreeShell();
                     try{
                         if(capfile==null){
@@ -754,13 +755,14 @@ public class MainActivity extends AppCompatActivity{
                         final boolean found = handshake_captured;
                         if(found) {
                             Shell shell_cp_cap =getFreeShell();
-                            String saveCapFileDest=cap_path+"/"+is_ap.mac.replace(":","")
+                            saveCapFileDest=cap_path+"/"+is_ap.mac.replace(":","")
                                     +"-"+System.currentTimeMillis()+ ".pcap";
                             String cmd=busybox + " cp "+capfile +" "+saveCapFileDest;
                             shell_cp_cap.run(cmd);
                             shell_cp_cap.done();
                             Airodump.startClean(is_ap);
                         }
+                        String finalSaveCapFileDest = saveCapFileDest;
                         runInHandler(new Runnable(){
                             @Override
                             public void run(){
@@ -776,7 +778,7 @@ public class MainActivity extends AppCompatActivity{
                                         s.setAction(R.string.crack, new View.OnClickListener(){
                                             @Override
                                             public void onClick(View v){
-                                                CrackFragment.capfile_text = capfile;
+                                                CrackFragment.capfile_text = finalSaveCapFileDest;
                                                 FragmentTransaction ft = mFragmentManager.beginTransaction();
                                                 ft.replace(R.id.fragment1, MainActivity.this.crackFragment);
                                                 ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);

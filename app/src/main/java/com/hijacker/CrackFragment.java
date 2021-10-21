@@ -17,14 +17,23 @@ package com.hijacker;
     along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+import static android.os.Environment.DIRECTORY_DOWNLOADS;
+
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.app.DownloadManager;
 import android.app.Fragment;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import com.google.android.material.snackbar.Snackbar;
+
+import android.os.Environment;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -40,17 +49,20 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 
 import static com.hijacker.MainActivity.FRAGMENT_CRACK;
 import static com.hijacker.MainActivity.PROCESS_AIRCRACK;
 import static com.hijacker.MainActivity.aircrack_dir;
 import static com.hijacker.MainActivity.background;
+import static com.hijacker.MainActivity.busybox;
 import static com.hijacker.MainActivity.cap_path;
 import static com.hijacker.MainActivity.currentFragment;
 import static com.hijacker.MainActivity.debug;
@@ -59,6 +71,7 @@ import static com.hijacker.MainActivity.path;
 import static com.hijacker.MainActivity.progress;
 import static com.hijacker.MainActivity.stop;
 import static com.hijacker.MainActivity.wl_path;
+import static com.hijacker.Shell.getFreeShell;
 
 public class CrackFragment extends Fragment{
     static final int WPA = 2, WEP = 1;
@@ -72,6 +85,8 @@ public class CrackFragment extends Fragment{
     RadioGroup wepRG, securityRG;
     RadioButton wepRB, wpaRB;
     ScrollView consoleScrollView;
+    OnWordlistDownloadFinishedReceiver onWordlistDownloadFinishedReceiver=new OnWordlistDownloadFinishedReceiver();
+    static HashMap<Long, WordlistDownloadDialog.Wordlist> downloadingTasks=new HashMap<Long, WordlistDownloadDialog.Wordlist>();
 
     //Dimensions to restore animated views
     int normalOptHeight = -1, normalTestBtnWidth = -1;
@@ -226,7 +241,8 @@ public class CrackFragment extends Fragment{
                 wordlistView.setText(result.getAbsolutePath());
             }
         }
-
+        //copy wordlist file to wl_path when download is finished
+        getActivity().registerReceiver(onWordlistDownloadFinishedReceiver,new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
         return fragmentView;
     }
     @Override
@@ -301,7 +317,8 @@ public class CrackFragment extends Fragment{
         wordlist_text = wordlistView.getText().toString();
         securityChecked = securityRG.getCheckedRadioButtonId();
         wepChecked = wepRG.getCheckedRadioButtonId();
-
+        //unregister broadcast receiver for wordlist download process to finish
+        getActivity().unregisterReceiver(onWordlistDownloadFinishedReceiver);
         super.onStop();
     }
     static boolean isRunning(){
@@ -594,6 +611,23 @@ public class CrackFragment extends Fragment{
             animator.start();
 
             notification();
+        }
+    }
+    private class OnWordlistDownloadFinishedReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //Fetching the download id received with the broadcast
+            long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+            //Checking if the received broadcast is for our enqueued download by matching download id
+            WordlistDownloadDialog.Wordlist wlDownloading=downloadingTasks.get(id);
+            if (wlDownloading!=null) {
+                Toast.makeText(getActivity(), wlDownloading.filename+"Download Completed", Toast.LENGTH_SHORT).show();
+                Shell shell_cp_cap =getFreeShell();
+                String cmd=busybox + " mv "+ Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)+"/"+wlDownloading.filename +
+                        " "+wl_path+"/";
+                shell_cp_cap.run(cmd);
+                shell_cp_cap.done();
+            }
         }
     }
 }
